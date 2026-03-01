@@ -175,12 +175,6 @@ EcoFi-Tracker/
 
 ---
 
-## 🏆 Built For
-
-**HackFest @ IIIT Bhubaneswar** — Fintech & Web3 track
-
----
-
 ## 📜 License
 
 MIT
