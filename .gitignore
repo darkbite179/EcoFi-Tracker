@@ -1,0 +1,29 @@
+# Dependencies
+node_modules/
+
+# Environment files (contain private keys!)
+.env
+backend/.env
+
+# Build outputs
+frontend/.next/
+frontend/out/
+smart-contracts/artifacts/
+smart-contracts/cache/
+smart-contracts/typechain-types/
+
+# IDE
+.vscode/
+.idea/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Coverage
+coverage/
+coverage.json
+
+# Misc
+*.log
+npm-debug.log*

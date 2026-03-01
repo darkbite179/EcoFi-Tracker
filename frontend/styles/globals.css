@@ -1,0 +1,251 @@
+/* ============================================================
+   EcoFi Tracker — Global Styles
+   Design System: Dark eco-tech with neon green accents
+   Font: Space Grotesk (matches Stitch MCP design theme)
+   ============================================================ */
+
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ── CSS Variables ──────────────────────────────────────────── */
+:root {
+  --bg-base:        #080d08;
+  --bg-card:        rgba(255, 255, 255, 0.04);
+  --border-card:    rgba(255, 255, 255, 0.08);
+  --green-primary:  #14d214;
+  --green-glow:     rgba(20, 210, 20, 0.25);
+  --green-dim:      rgba(20, 210, 20, 0.08);
+  --text-primary:   #f0f4f0;
+  --text-secondary: #8a9e8a;
+  --text-muted:     #4a5e4a;
+  --amber:          #f59e0b;
+  --red:            #ef4444;
+}
+
+/* ── Base ───────────────────────────────────────────────────── */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body {
+  background-color: var(--bg-base);
+  color: var(--text-primary);
+  font-family: 'Space Grotesk', system-ui, sans-serif;
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ── Glassmorphism Card ─────────────────────────────────────── */
+.glass-card {
+  background: var(--bg-card);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid var(--border-card);
+  border-radius: 20px;
+}
+
+/* ── Green glow effects ─────────────────────────────────────── */
+.glow-green {
+  box-shadow: 0 0 30px var(--green-glow), 0 0 60px rgba(20, 210, 20, 0.1);
+}
+
+.text-glow {
+  text-shadow: 0 0 20px var(--green-primary), 0 0 40px rgba(20, 210, 20, 0.5);
+}
+
+/* ── Animated gradient background orbs ─────────────────────── */
+.bg-orb {
+  position: fixed;
+  border-radius: 50%;
+  filter: blur(80px);
+  pointer-events: none;
+  z-index: 0;
+  animation: orb-float 8s ease-in-out infinite;
+}
+
+.bg-orb-1 {
+  width: 400px; height: 400px;
+  background: radial-gradient(circle, rgba(20, 210, 20, 0.12), transparent 70%);
+  top: -100px; left: -100px;
+  animation-delay: 0s;
+}
+
+.bg-orb-2 {
+  width: 300px; height: 300px;
+  background: radial-gradient(circle, rgba(20, 210, 20, 0.08), transparent 70%);
+  bottom: -80px; right: -80px;
+  animation-delay: 4s;
+}
+
+@keyframes orb-float {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50%       { transform: translate(20px, 20px) scale(1.1); }
+}
+
+/* ── Button styles ──────────────────────────────────────────── */
+.btn-primary {
+  background: linear-gradient(135deg, #14d214, #0aa50a);
+  color: #050f05;
+  font-weight: 700;
+  font-family: 'Space Grotesk', sans-serif;
+  border: none;
+  border-radius: 12px;
+  padding: 14px 28px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  letter-spacing: 0.01em;
+  font-size: 0.95rem;
+}
+
+.btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px var(--green-glow);
+  background: linear-gradient(135deg, #1aff1a, #12c812);
+}
+
+.btn-primary:active {
+  transform: translateY(0);
+}
+
+.btn-secondary {
+  background: transparent;
+  color: var(--green-primary);
+  font-weight: 600;
+  font-family: 'Space Grotesk', sans-serif;
+  border: 1.5px solid var(--green-primary);
+  border-radius: 12px;
+  padding: 12px 24px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 0.9rem;
+}
+
+.btn-secondary:hover {
+  background: var(--green-dim);
+  box-shadow: 0 4px 15px var(--green-glow);
+  transform: translateY(-1px);
+}
+
+/* ── Metric card ────────────────────────────────────────────── */
+.metric-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-card);
+  border-radius: 16px;
+  padding: 20px 24px;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.metric-card:hover {
+  border-color: rgba(20, 210, 20, 0.2);
+  box-shadow: 0 4px 20px rgba(20, 210, 20, 0.08);
+}
+
+/* ── Badge ──────────────────────────────────────────────────── */
+.badge-green {
+  background: var(--green-dim);
+  color: var(--green-primary);
+  border: 1px solid rgba(20, 210, 20, 0.2);
+  border-radius: 999px;
+  padding: 4px 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.badge-red {
+  background: rgba(239, 68, 68, 0.08);
+  color: #ef4444;
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  border-radius: 999px;
+  padding: 4px 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+/* ── Loading spinner ────────────────────────────────────────── */
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.spinner {
+  animation: spin 1s linear infinite;
+}
+
+/* ── Fade-in animation ──────────────────────────────────────── */
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.fade-in-up {
+  animation: fadeInUp 0.5s ease forwards;
+}
+
+/* ── LEAF token banner ──────────────────────────────────────── */
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 0 0 20px var(--green-glow); }
+  50%       { box-shadow: 0 0 40px var(--green-glow), 0 0 80px rgba(20, 210, 20, 0.15); }
+}
+
+.leaf-banner {
+  background: linear-gradient(135deg, rgba(20, 210, 20, 0.15), rgba(10, 165, 10, 0.08));
+  border: 1px solid rgba(20, 210, 20, 0.3);
+  border-radius: 20px;
+  animation: pulse-glow 3s ease-in-out infinite;
+}
+
+/* ── SVG Gauge ──────────────────────────────────────────────── */
+@keyframes gauge-draw {
+  from { stroke-dashoffset: 283; }
+}
+
+.gauge-fill {
+  animation: gauge-draw 1.5s ease-out forwards;
+}
+
+/* ── Upload drop zone ───────────────────────────────────────── */
+.drop-zone {
+  border: 2px dashed var(--text-muted);
+  border-radius: 16px;
+  transition: all 0.2s ease;
+}
+
+.drop-zone:hover, .drop-zone.active {
+  border-color: var(--green-primary);
+  background: var(--green-dim);
+}
+
+/* ── Receipt preset buttons ─────────────────────────────────── */
+.preset-btn {
+  background: var(--bg-card);
+  border: 1px solid var(--border-card);
+  border-radius: 10px;
+  padding: 10px 16px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+  font-family: 'Space Grotesk', sans-serif;
+  font-weight: 500;
+}
+
+.preset-btn:hover {
+  border-color: var(--green-primary);
+  color: var(--green-primary);
+  background: var(--green-dim);
+}
+
+.preset-btn.selected {
+  border-color: var(--green-primary);
+  color: var(--green-primary);
+  background: var(--green-dim);
+}
+
+/* ── Scrollbar ──────────────────────────────────────────────── */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: var(--bg-base); }
+::-webkit-scrollbar-thumb { background: var(--text-muted); border-radius: 3px; }
