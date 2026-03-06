@@ -3,17 +3,23 @@ const { ethers } = require("hardhat");
 async function main() {
     console.log("\n🌿 EcoFi Tracker — Deploying GreenToken ($LEAF)...\n");
 
-    const [deployer, oracleAccount] = await ethers.getSigners();
+    const [deployer] = await ethers.getSigners();
+
+    // On testnet, use the deployer as both deployer AND oracle signer
+    // (In production, these should be separate keys for security)
+    const oracleAddress = deployer.address;
 
     console.log(`📦 Deployer address  : ${deployer.address}`);
-    console.log(`🔑 Oracle signer     : ${oracleAccount.address}`);
+    console.log(`🔑 Oracle signer     : ${oracleAddress}`);
 
     const deployerBalance = await ethers.provider.getBalance(deployer.address);
-    console.log(`💰 Deployer balance  : ${ethers.formatEther(deployerBalance)} ETH\n`);
+    const network = await ethers.provider.getNetwork();
+    console.log(`💰 Deployer balance  : ${ethers.formatEther(deployerBalance)} MATIC`);
+    console.log(`🌐 Network           : ${network.name} (chainId: ${network.chainId})\n`);
 
     // Deploy GreenToken, passing the oracle signer address to the constructor
     const GreenToken = await ethers.getContractFactory("GreenToken");
-    const greenToken = await GreenToken.deploy(oracleAccount.address);
+    const greenToken = await GreenToken.deploy(oracleAddress);
     await greenToken.waitForDeployment();
 
     const contractAddress = await greenToken.getAddress();
@@ -24,10 +30,8 @@ async function main() {
     console.log(`   Token symbol     : $${await greenToken.symbol()}`);
     console.log(`   Oracle signer    : ${await greenToken.oracleSigner()}\n`);
 
-    // ─── Seed owner liquidity (for demo) ────────────────────────────────────────
-    // On local network, give the deployer 10,000 $LEAF so the demo wallet
-    // shows a non-zero balance immediately after deploy.
-    if ((await ethers.provider.getNetwork()).chainId === 31337n) {
+    // ─── Seed owner liquidity (for demo — local only) ─────────────────────────
+    if (network.chainId === 31337n) {
         const seedAmount = ethers.parseEther("10000");
         const tx = await greenToken.ownerMint(deployer.address, seedAmount);
         await tx.wait();
@@ -36,7 +40,8 @@ async function main() {
 
     console.log("\n📋 Copy these values into your backend/.env:\n");
     console.log(`CONTRACT_ADDRESS=${contractAddress}`);
-    console.log(`ORACLE_PRIVATE_KEY=<private key of ${oracleAccount.address}>`);
+    console.log(`ORACLE_PRIVATE_KEY=0x1fb906f30f4d5817981716821a2af3d5defdd3d876d6390d1a374399eabc91e8`);
+    console.log(`\n🔗 View on explorer: https://amoy.polygonscan.com/address/${contractAddress}`);
     console.log("\n✨ Done!\n");
 }
 

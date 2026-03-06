@@ -1,8 +1,18 @@
 const express = require("express");
-const axios = require("axios");
+const { GoogleGenAI } = require("@google/genai");
 const { signMintAuthorization } = require("../utils/signer");
 
 const router = express.Router();
+
+// ─── Gemini AI Client ─────────────────────────────────────────────────────────
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+let ai = null;
+if (GEMINI_API_KEY) {
+    ai = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
+    console.log("✅ Gemini AI initialized (model: gemini-2.0-flash)");
+} else {
+    console.warn("⚠️  GEMINI_API_KEY not set — will use mock data for receipt parsing");
+}
 
 // ─── Carbon Database ──────────────────────────────────────────────────────────
 // Averages from Poore & Nemecek (2018) Oxford meta-analysis, kg CO2e per kg food
@@ -64,42 +74,70 @@ const MOCK_RECEIPTS = {
 // Regional average basket footprint (kg CO2e) — used for green score calculation
 const REGIONAL_AVERAGE_CO2 = 14.0;
 
-// ─── Ollama LLM Parser ────────────────────────────────────────────────────────
-async function parseReceiptWithOllama(rawText) {
-    const ollamaUrl = process.env.OLLAMA_BASE_URL || "http://localhost:11434";
-
-    const systemPrompt = `You are a grocery receipt parser for an environmental impact app.
+// ─── Gemini AI Receipt Parser ─────────────────────────────────────────────────
+const SYSTEM_PROMPT = `You are a grocery receipt parser for an environmental impact app called EcoFi Tracker.
 Extract food items from the raw receipt text provided.
-Return ONLY a valid JSON array. No explanation, no markdown fences, just raw JSON.
+Return ONLY a valid JSON array. No explanation, no markdown fences, no backticks, just raw JSON.
 
 Each item must have:
 {
-  "item": "Human-readable item name",
-  "category": "one of: beef, lamb, chicken, pork, turkey, fish, eggs, dairy_milk, almond_milk, oat_milk, soy_milk, rice, bread, pasta, potato, tomato, apple, banana, avocado, lentils, tofu, chocolate, coffee, nuts, generic_grocery",
-  "quantity": <estimated kilograms as a number>,
-  "isGreen": <true if this is a sustainable choice vs conventional alternative, false otherwise>
+  "item": "Human-readable item name with quantity",
+  "category": "one of: beef, lamb, mutton, chicken, pork, turkey, fish, eggs, dairy_milk, almond_milk, oat_milk, soy_milk, rice, bread, pasta, potato, tomato, apple, banana, avocado, lentils, tofu, chocolate, coffee, nuts, cheese, generic_grocery",
+  "quantity": <estimated kilograms as a decimal number>,
+  "isGreen": <true if this is a sustainable/eco-friendly choice vs conventional alternative, false otherwise>
 }
 
-If an item is ambiguous, use "generic_grocery". Never include non-food items.`;
+Rules:
+- For liquids like milk, 1 liter ≈ 1 kg
+- For eggs, 1 dozen ≈ 0.7 kg
+- If an item is ambiguous, use "generic_grocery" category
+- Never include non-food items (bags, receipts, tax)
+- "Organic", "local", "free-range" items should have isGreen: true
+- Plant-based milks (oat, soy, almond) are always isGreen: true
+- Lentils, tofu, and beans are always isGreen: true
+- Mark beef, lamb, and mutton as isGreen: false`;
 
-    try {
-        const response = await axios.post(
-            `${ollamaUrl}/api/generate`,
-            {
-                model: process.env.OLLAMA_MODEL || "llama3:8b",
-                prompt: `${systemPrompt}\n\nRaw receipt text:\n${rawText}`,
-                stream: false,
-                options: { temperature: 0.1 },
-            },
-            { timeout: 30000 }
-        );
-
-        const jsonStr = response.data.response.trim();
-        return JSON.parse(jsonStr);
-    } catch (err) {
-        console.warn("⚠️  Ollama unavailable, falling back to mock data:", err.message);
-        return null; // caller will use mock
+async function parseReceiptWithGemini(rawText) {
+    if (!ai) {
+        console.warn("⚠️  Gemini not configured, using mock data");
+        return null;
     }
+
+    const MAX_RETRIES = 3;
+
+    for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+        try {
+            console.log(`🤖 Sending receipt to Gemini AI... (attempt ${attempt}/${MAX_RETRIES})`);
+
+            const response = await ai.models.generateContent({
+                model: "gemini-2.0-flash",
+                contents: `${SYSTEM_PROMPT}\n\nRaw receipt text:\n${rawText}`,
+            });
+
+            let jsonStr = response.text.trim();
+
+            // Strip markdown code fences if Gemini wraps it
+            if (jsonStr.startsWith("```")) {
+                jsonStr = jsonStr.replace(/^```(?:json)?\n?/, "").replace(/\n?```$/, "").trim();
+            }
+
+            const parsed = JSON.parse(jsonStr);
+            console.log(`✅ Gemini parsed ${parsed.length} items from receipt`);
+            return parsed;
+        } catch (err) {
+            const isRateLimit = err.message && (err.message.includes("429") || err.message.includes("quota") || err.message.includes("RESOURCE_EXHAUSTED"));
+
+            if (isRateLimit && attempt < MAX_RETRIES) {
+                const waitSec = attempt * 5; // 5s, 10s backoff
+                console.warn(`⏳ Rate limited, waiting ${waitSec}s before retry...`);
+                await new Promise(r => setTimeout(r, waitSec * 1000));
+            } else {
+                console.error("❌ Gemini parsing failed:", err.message);
+                return null; // caller will use mock
+            }
+        }
+    }
+    return null;
 }
 
 // ─── Score Calculator ─────────────────────────────────────────────────────────
@@ -119,28 +157,42 @@ function calculateScore(items) {
         leafReward += reward;
 
         // Eco-swap suggestion for high-impact items
-        let suggestion = null;
+        let swap = null;
+        let swapSavings = 0;
+        let swapLeaf = 0;
         if (item.category === "beef" || item.category === "lamb" || item.category === "mutton") {
-            suggestion = { swapTo: "Chicken or Lentils", co2Saved: itemCO2 - (CARBON_DB.chicken * qty), bonusLeaf: 40 };
+            swapSavings = parseFloat((itemCO2 - CARBON_DB.chicken * qty).toFixed(1));
+            swap = "Chicken or Lentils";
+            swapLeaf = 40;
         } else if (item.category === "dairy_milk") {
-            suggestion = { swapTo: "Oat Milk (Brand B)", co2Saved: itemCO2 - (CARBON_DB.oat_milk * qty), bonusLeaf: 15 };
+            swapSavings = parseFloat((itemCO2 - CARBON_DB.oat_milk * qty).toFixed(1));
+            swap = "Oat Milk (Brand B)";
+            swapLeaf = 15;
         } else if (item.category === "cheese") {
-            suggestion = { swapTo: "Tofu (reduced-fat)", co2Saved: itemCO2 - (CARBON_DB.tofu * qty), bonusLeaf: 10 };
+            swapSavings = parseFloat((itemCO2 - CARBON_DB.tofu * qty).toFixed(1));
+            swap = "Tofu (reduced-fat)";
+            swapLeaf = 10;
         }
 
-        return { ...item, co2_kg: parseFloat(itemCO2.toFixed(2)), isGreen, leafReward: reward, suggestion };
+        return {
+            item: item.item,
+            co2: parseFloat(itemCO2.toFixed(2)),
+            isGreen,
+            leafReward: reward,
+            swap,
+            swapSavings,
+        };
     });
 
-    const savedVsAverage = Math.max(0, REGIONAL_AVERAGE_CO2 - totalCO2);
-    const greenScore = Math.min(1000, Math.round(leafReward + savedVsAverage * 3));
+    const vsAverage = parseFloat((totalCO2 - REGIONAL_AVERAGE_CO2).toFixed(1));
+    const greenScore = Math.min(1000, Math.max(0, Math.round(leafReward + Math.max(0, REGIONAL_AVERAGE_CO2 - totalCO2) * 3)));
 
     return {
-        items: enrichedItems,
-        totalCO2: parseFloat(totalCO2.toFixed(2)),
-        leafReward,
+        totalCO2: parseFloat(totalCO2.toFixed(1)),
+        vsAverage,
         greenScore,
-        savedCO2: parseFloat(savedVsAverage.toFixed(2)),
-        isGreenBasket: totalCO2 < REGIONAL_AVERAGE_CO2,
+        leafReward,
+        items: enrichedItems,
     };
 }
 
@@ -156,15 +208,16 @@ router.post("/analyze", async (req, res) => {
             console.log(`📋 Using mock preset: "${mockPreset}"`);
             rawItems = MOCK_RECEIPTS[mockPreset];
         } else if (receiptText) {
-            // Attempt real Ollama parsing
-            const parsed = await parseReceiptWithOllama(receiptText);
+            // Real AI-powered parsing with Gemini
+            console.log(`📄 Parsing receipt text (${receiptText.length} chars)...`);
+            const parsed = await parseReceiptWithGemini(receiptText);
             rawItems = parsed ?? MOCK_RECEIPTS.average; // graceful fallback
         } else {
             return res.status(400).json({ error: "Provide either receiptText or mockPreset (bad|average|green)" });
         }
 
         const result = calculateScore(rawItems);
-        console.log(`📊 Analysis complete: ${result.totalCO2}kg CO2, score=${result.greenScore}, reward=${result.leafReward} $LEAF`);
+        console.log(`📊 Analysis: ${result.totalCO2}kg CO₂, score=${result.greenScore}, reward=${result.leafReward} $LEAF`);
 
         res.json(result);
     } catch (err) {

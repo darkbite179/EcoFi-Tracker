@@ -6,23 +6,21 @@
 
 @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap');
 
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
 
 /* ── CSS Variables ──────────────────────────────────────────── */
 :root {
-  --bg-base:        #080d08;
-  --bg-card:        rgba(255, 255, 255, 0.04);
-  --border-card:    rgba(255, 255, 255, 0.08);
-  --green-primary:  #14d214;
-  --green-glow:     rgba(20, 210, 20, 0.25);
-  --green-dim:      rgba(20, 210, 20, 0.08);
-  --text-primary:   #f0f4f0;
+  --bg-base: #080d08;
+  --bg-card: rgba(255, 255, 255, 0.04);
+  --border-card: rgba(255, 255, 255, 0.08);
+  --green-primary: #14d214;
+  --green-glow: rgba(20, 210, 20, 0.25);
+  --green-dim: rgba(20, 210, 20, 0.08);
+  --text-primary: #f0f4f0;
   --text-secondary: #8a9e8a;
-  --text-muted:     #4a5e4a;
-  --amber:          #f59e0b;
-  --red:            #ef4444;
+  --text-muted: #4a5e4a;
+  --amber: #f59e0b;
+  --red: #ef4444;
 }
 
 /* ── Base ───────────────────────────────────────────────────── */
@@ -32,7 +30,8 @@
   padding: 0;
 }
 
-html, body {
+html,
+body {
   background-color: var(--bg-base);
   color: var(--text-primary);
   font-family: 'Space Grotesk', system-ui, sans-serif;
@@ -69,22 +68,33 @@ html, body {
 }
 
 .bg-orb-1 {
-  width: 400px; height: 400px;
+  width: 400px;
+  height: 400px;
   background: radial-gradient(circle, rgba(20, 210, 20, 0.12), transparent 70%);
-  top: -100px; left: -100px;
+  top: -100px;
+  left: -100px;
   animation-delay: 0s;
 }
 
 .bg-orb-2 {
-  width: 300px; height: 300px;
+  width: 300px;
+  height: 300px;
   background: radial-gradient(circle, rgba(20, 210, 20, 0.08), transparent 70%);
-  bottom: -80px; right: -80px;
+  bottom: -80px;
+  right: -80px;
   animation-delay: 4s;
 }
 
 @keyframes orb-float {
-  0%, 100% { transform: translate(0, 0) scale(1); }
-  50%       { transform: translate(20px, 20px) scale(1.1); }
+
+  0%,
+  100% {
+    transform: translate(0, 0) scale(1);
+  }
+
+  50% {
+    transform: translate(20px, 20px) scale(1.1);
+  }
 }
 
 /* ── Button styles ──────────────────────────────────────────── */
@@ -168,7 +178,9 @@ html, body {
 
 /* ── Loading spinner ────────────────────────────────────────── */
 @keyframes spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .spinner {
@@ -177,8 +189,15 @@ html, body {
 
 /* ── Fade-in animation ──────────────────────────────────────── */
 @keyframes fadeInUp {
-  from { opacity: 0; transform: translateY(16px); }
-  to   { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .fade-in-up {
@@ -187,8 +206,15 @@ html, body {
 
 /* ── LEAF token banner ──────────────────────────────────────── */
 @keyframes pulse-glow {
-  0%, 100% { box-shadow: 0 0 20px var(--green-glow); }
-  50%       { box-shadow: 0 0 40px var(--green-glow), 0 0 80px rgba(20, 210, 20, 0.15); }
+
+  0%,
+  100% {
+    box-shadow: 0 0 20px var(--green-glow);
+  }
+
+  50% {
+    box-shadow: 0 0 40px var(--green-glow), 0 0 80px rgba(20, 210, 20, 0.15);
+  }
 }
 
 .leaf-banner {
@@ -200,7 +226,9 @@ html, body {
 
 /* ── SVG Gauge ──────────────────────────────────────────────── */
 @keyframes gauge-draw {
-  from { stroke-dashoffset: 283; }
+  from {
+    stroke-dashoffset: 283;
+  }
 }
 
 .gauge-fill {
@@ -214,7 +242,8 @@ html, body {
   transition: all 0.2s ease;
 }
 
-.drop-zone:hover, .drop-zone.active {
+.drop-zone:hover,
+.drop-zone.active {
   border-color: var(--green-primary);
   background: var(--green-dim);
 }
@@ -246,6 +275,15 @@ html, body {
 }
 
 /* ── Scrollbar ──────────────────────────────────────────────── */
-::-webkit-scrollbar { width: 6px; }
-::-webkit-scrollbar-track { background: var(--bg-base); }
-::-webkit-scrollbar-thumb { background: var(--text-muted); border-radius: 3px; }
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg-base);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--text-muted);
+  border-radius: 3px;
+}
