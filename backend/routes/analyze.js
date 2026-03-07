@@ -9,7 +9,7 @@ const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 let ai = null;
 if (GEMINI_API_KEY) {
     ai = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
-    console.log("✅ Gemini AI initialized (model: gemini-2.0-flash)");
+    console.log("✅ Gemini AI initialized (model: gemini-2.5-flash)");
 } else {
     console.warn("⚠️  GEMINI_API_KEY not set — will use mock data for receipt parsing");
 }
@@ -110,7 +110,7 @@ async function parseReceiptWithGemini(rawText) {
             console.log(`🤖 Sending receipt to Gemini AI... (attempt ${attempt}/${MAX_RETRIES})`);
 
             const response = await ai.models.generateContent({
-                model: "gemini-2.0-flash",
+                model: "gemini-2.5-flash",
                 contents: `${SYSTEM_PROMPT}\n\nRaw receipt text:\n${rawText}`,
             });
 
