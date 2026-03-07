@@ -26,6 +26,12 @@ class _HomeScreenState extends State<HomeScreen> {
   final ImagePicker _picker = ImagePicker();
   XFile? _capturedImage;
 
+  // Wallet simulation
+  bool _walletConnected = false;
+  final String _walletAddress = "0x8C98...1FF4DE";
+  final String _fullWalletAddress = "0x8C98CC3BF42030434E1380374311dBf2b01FF4DE";
+  int _leafBalance = 0;
+
   // Loading animation
   int _loadingStep = 0;
   final List<String> _loadingMessages = [
@@ -35,10 +41,87 @@ class _HomeScreenState extends State<HomeScreen> {
     "🌿 Generating eco-swaps & rewards...",
   ];
 
-  String get _backendUrl {
-    if (kIsWeb) return "http://localhost:3001";
-    // Android emulator uses 10.0.2.2 to reach host localhost
-    return "http://10.0.2.2:3001";
+  void _connectWallet() {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppColors.bgBase,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+          side: const BorderSide(color: AppColors.borderCard),
+        ),
+        title: Row(
+          children: [
+            const Icon(Icons.account_balance_wallet, color: AppColors.greenPrimary),
+            const SizedBox(width: 8),
+            Text(
+              _walletConnected ? 'Wallet Connected' : 'Connect Wallet',
+              style: const TextStyle(color: AppColors.greenPrimary, fontSize: 18),
+            ),
+          ],
+        ),
+        content: _walletConnected
+            ? Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('ADDRESS', style: TextStyle(color: AppColors.textMuted, fontSize: 10, fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 4),
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(color: AppColors.bgCard, borderRadius: BorderRadius.circular(12)),
+                    child: Text(_fullWalletAddress, style: const TextStyle(color: AppColors.textPrimary, fontSize: 11, fontFamily: 'monospace')),
+                  ),
+                  const SizedBox(height: 16),
+                  const Text('BALANCE', style: TextStyle(color: AppColors.textMuted, fontSize: 10, fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 4),
+                  Text('$_leafBalance \$LEAF', style: const TextStyle(color: AppColors.greenPrimary, fontSize: 24, fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 4),
+                  const Text('Polygon Amoy Testnet', style: TextStyle(color: AppColors.textSecondary, fontSize: 12)),
+                  const SizedBox(height: 16),
+                  TextButton(
+                    onPressed: () {
+                      setState(() {
+                        _walletConnected = false;
+                        _leafBalance = 0;
+                      });
+                      Navigator.of(ctx).pop();
+                    },
+                    child: const Text('Disconnect', style: TextStyle(color: AppColors.red)),
+                  ),
+                ],
+              )
+            : Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Text(
+                    'On mobile, wallet connection is simulated for the hackathon demo. On desktop, use MetaMask.',
+                    style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
+                  ),
+                  const SizedBox(height: 20),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
+                      onPressed: () {
+                        setState(() => _walletConnected = true);
+                        Navigator.of(ctx).pop();
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('Connected: $_walletAddress'),
+                            backgroundColor: AppColors.greenPrimary,
+                            behavior: SnackBarBehavior.floating,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          ),
+                        );
+                      },
+                      icon: const Icon(Icons.account_balance_wallet),
+                      label: const Text('Simulate Wallet Connect'),
+                    ),
+                  ),
+                ],
+              ),
+      ),
+    );
   }
 
   Future<void> _captureReceipt() async {
@@ -114,7 +197,7 @@ class _HomeScreenState extends State<HomeScreen> {
       } else {
         // Text-based analysis via backend
         final response = await http.post(
-          Uri.parse('$_backendUrl/api/analyze'),
+          Uri.parse('${AppConstants.backendUrl}/api/analyze'),
           headers: {'Content-Type': 'application/json'},
           body: jsonEncode({'receiptText': _receiptController.text}),
         );
@@ -146,9 +229,14 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _claimTokens() {
+    final int reward = _resultData?['leafReward'] ?? 0;
+    final String fakeTxHash = '0x${DateTime.now().millisecondsSinceEpoch.toRadixString(16)}a4f3d6e977b6d684fd';
+
+    setState(() => _leafBalance += reward);
+
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (ctx) => AlertDialog(
         backgroundColor: AppColors.bgBase,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(20),
@@ -156,18 +244,35 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
         title: const Row(
           children: [
-            Icon(Icons.check_circle_outline, color: AppColors.greenPrimary),
+            Icon(Icons.check_circle_outline, color: AppColors.greenPrimary, size: 28),
             SizedBox(width: 8),
-            Text('Success!', style: TextStyle(color: AppColors.greenPrimary)),
+            Text('Tokens Minted!', style: TextStyle(color: AppColors.greenPrimary, fontSize: 18)),
           ],
         ),
-        content: const Text(
-          'Tokens successfully minted to your Web3 wallet via the backend Oracle!\n\n(Simulated for mobile demo)',
-          style: TextStyle(color: AppColors.textPrimary),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('+$reward \$LEAF minted to your wallet', style: const TextStyle(color: AppColors.textPrimary, fontSize: 15)),
+            const SizedBox(height: 16),
+            const Text('TRANSACTION', style: TextStyle(color: AppColors.textMuted, fontSize: 10, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 4),
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(color: AppColors.bgCard, borderRadius: BorderRadius.circular(8)),
+              child: Text(fakeTxHash, style: const TextStyle(color: AppColors.textSecondary, fontSize: 10, fontFamily: 'monospace')),
+            ),
+            const SizedBox(height: 12),
+            const Text('NETWORK', style: TextStyle(color: AppColors.textMuted, fontSize: 10, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 4),
+            const Text('Polygon Amoy Testnet (chainId: 80002)', style: TextStyle(color: AppColors.textSecondary, fontSize: 12)),
+            const SizedBox(height: 12),
+            Text('New Balance: $_leafBalance \$LEAF', style: const TextStyle(color: AppColors.greenPrimary, fontWeight: FontWeight.bold, fontSize: 16)),
+          ],
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.of(context).pop(),
+            onPressed: () => Navigator.of(ctx).pop(),
             child: const Text('Awesome!', style: TextStyle(color: AppColors.greenPrimary)),
           ),
         ],
@@ -192,15 +297,29 @@ class _HomeScreenState extends State<HomeScreen> {
         elevation: 0,
         centerTitle: false,
         actions: [
-          Container(
-            margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            decoration: BoxDecoration(
-              color: AppColors.greenPrimary,
-              borderRadius: BorderRadius.circular(20),
+          GestureDetector(
+            onTap: _connectWallet,
+            child: Container(
+              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              decoration: BoxDecoration(
+                color: _walletConnected ? AppColors.greenDim : AppColors.greenPrimary,
+                borderRadius: BorderRadius.circular(20),
+                border: _walletConnected ? Border.all(color: AppColors.greenPrimary) : null,
+              ),
+              alignment: Alignment.center,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (_walletConnected) ...[                    
+                    const Icon(Icons.circle, color: AppColors.greenPrimary, size: 8),
+                    const SizedBox(width: 6),
+                    Text(_walletAddress, style: const TextStyle(color: AppColors.greenPrimary, fontWeight: FontWeight.bold, fontSize: 11)),
+                  ] else
+                    const Text('Connect Wallet', style: TextStyle(color: AppColors.bgBase, fontWeight: FontWeight.bold, fontSize: 12)),
+                ],
+              ),
             ),
-            alignment: Alignment.center,
-            child: const Text('Connect Wallet', style: TextStyle(color: AppColors.bgBase, fontWeight: FontWeight.bold, fontSize: 12)),
           )
         ],
       ),
