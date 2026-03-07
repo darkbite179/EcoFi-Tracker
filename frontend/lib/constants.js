@@ -48,6 +48,6 @@ export const MOCK_RESULTS = {
 };
 
 export const REGIONAL_AVERAGE_CO2 = 14.0;
-export const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:3001";
-export const CONTRACT_ADDRESS = process.env.NEXT_PUBLIC_CONTRACT_ADDRESS || "0x5FbDB2315678afecb367f032d93F642f64180aa3";
+export const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "https://ecofi-tracker.onrender.com";
+export const CONTRACT_ADDRESS = process.env.NEXT_PUBLIC_CONTRACT_ADDRESS || "0xE49Dd0f38d5C1Bb803Ac4f3D6114e977B6d684fd";
 export const CHAIN_ID_LOCAL = 31337;

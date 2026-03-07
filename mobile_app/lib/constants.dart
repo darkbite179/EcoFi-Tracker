@@ -14,7 +14,7 @@ class AppColors {
 }
 
 class AppConstants {
-  static const String backendUrl = "http://10.0.2.2:3001"; // Android emulator localhost
+  static const String backendUrl = "https://ecofi-tracker.onrender.com";
 
   static const Map<String, dynamic> mockResults = {
     'high_carbon': {
